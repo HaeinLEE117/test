@@ -1,0 +1,22 @@
+<form action="/search" method="post">
+    <label for="input_category">대분류 (장비):</label>
+<select name="input_category" id="input_category">`;
+
+for (i in category) {
+    html = html + `<option value="${category[i].title}">${category[i].title}</option>`;
+}
+
+html = html + `
+</select>
+<input type="text" id="selboxDirect" name="selboxDirect"/>
+<label for="input_sub_category">소분류 :</label>
+<select name="input_sub_category" id="input_sub_category">`;
+for (i in sub_category) {
+    html = html + `<option value="${sub_category[i]}">${sub_category[i]}</option>`;
+}
+html = html + `</select>
+
+<p>
+<input type="submit" >
+</p>
+</form>
