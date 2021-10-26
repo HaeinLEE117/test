@@ -278,8 +278,8 @@ app.get('/F1_2', function (request, response) {
   //목적지를 보고 line 색상을 결정해주는 함수
   function return_line(destination) {
     switch (destination) {
-      case 306:
-      case 1102:
+      case 307:
+      case 2101:
         return 1;
         break;
       case 101:
@@ -287,7 +287,7 @@ app.get('/F1_2', function (request, response) {
         return 2;
         break;
       case 306:
-      case 2102:
+      case 2307:
         return 3;
         break;
       case 14:
@@ -874,9 +874,9 @@ app.get('/AGV/:VN/:point/:des/:pro', async (req, res) => {
 
 
 
-
-app.listen(3000, function () {
-  console.log('Example app listening on port 3000!')
+//apllication port 3003
+app.listen(3003, function () {
+  console.log('Example app listening on port 3003!')
 });
 
 
