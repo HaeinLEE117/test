@@ -12,6 +12,8 @@ var mysql = require('mysql');
 const { type } = require('os');
 var sql = require('./db_sql')();
 const lineReader = require('line-reader');
+var cookie = require('cookie');
+var JSAlert = require("js-alert");
 const db_info = {
   host: 'localhost',
   user: 'root',
@@ -19,19 +21,42 @@ const db_info = {
   database: 'meta_0'
 };
 
+function authIsOwner(request, response){
+  var isOwner = false;
+  var cookies = {};
+  if(request.headers.cookie){
+  cookies = cookie.parse(request.headers.cookie);
+  }
+  if(cookies.email === "lee123" && cookies.password ==='1111'){
+    isOwner = true;
+  }
+  return isOwner;
+}
+
+function authStatusUI(request, response){
+  var authStatusUI = `<a href = "/login">login<a>`;
+  if(authIsOwner(request, response)){
+    authStatusUI = `<a href = "/logout_process">logout<a>`;
+  }
+  return authStatusUI;
+}
 
 
 //정적 파일 디렉토리 지정
 app.use(express.static('public'));
 app.use(express.static(__dirname + '/public'));
 
-//미들웨어 작성 예제
+//미들웨어 작성 예제 + 쿠키 처리
 app.use(bodyParser.urlencoded({ extended: false }));
 app.get('*', function (request, response, next) {
+  var isOwner = authIsOwner(request,response);
+
+
+  request.authStatusUI = authStatusUI;
   //get으로 접속하는 모든 페이지에 ./data에 존재하는 filelist를 request.list에 담아 보냄
   fs.readdir('./data', function (error, filelist) {
     request.list = filelist;
-    next();
+    next(); 
   });
 });
 app.get('/state/*', function (request, response, next) {
@@ -41,115 +66,66 @@ app.get('/state/*', function (request, response, next) {
   });
 });
 
-//장비 상태를 입력받는 페이지 코드. state파일에 장비유형 별 state정리
-app.get('/state/:equmId', function (request, response) {
-  var filteredId = path.parse(request.params.equmId).base;
-  const file_name = filteredId[0] + filteredId[1];
-//측정 및 검사기는 입력 단계가 많아 따로 처리
-  if (file_name == 'me') {
-    fs.readFile(`./equm_state/${file_name}.txt`, 'utf8', function (err, equm_state) {
-      var title = request.params.pageId;
-      var sanitizedTitle = sanitizeHtml(filteredId);
-      var strArray = equm_state.split('\n');
-      var html = db_template.me_state_list(filteredId, strArray);
-      response.send(html);
-    })
-  } else {
-    fs.readFile(`./equm_state/${file_name}.txt`, 'utf8', function (err, equm_state) {
-      var title = request.params.pageId;
-      var sanitizedTitle = sanitizeHtml(filteredId);
-      var strArray = equm_state.split('\n');
-      var html = db_template.state_list(filteredId, strArray);
-      response.send(html);
-    })
-  }
-});
-//장비 상태 업데이트 처리하는 코드
-app.post('/submit', function (request, response) {
-  var post = request.body;
-  var equm = post.equm;
-  var input_state = post.equm_state;
-  var input_user = post.user_number;
-  var html = ``;
-  var connection = mysql.createConnection(db_info);
-  connection.connect();
-  var sql = `select User from ${equm}_now ORDER BY seq desc`;
-  connection.query(sql,
-    function (error, results, fields) {
-      if (results[0].User == null) {
-        if (input_state != '') {
-          connection.query(`insert into ${equm}_now(State,User, Time) VALUES("${input_state}", ${input_user}, now())`,
-            function (error, results, fields) {
-              html = html + `장비 업데이트 완료`;
-            });
-        } else {
-          html = html + `이미 작업이 종료된 장비`;
-        }
-      } else {
-        if (results[0].User == input_user) {
-          if (input_state == '') {
-            connection.query(`insert into ${equm}_now(Time) VALUES(now())`,
-              function (error, results, fields) {
-                html = html + `장비 종료 완료`;
-              });
-          } else {
-            connection.query(`insert into ${equm}_now(State,User, Time) VALUES("${input_state}", ${input_user}, now())`,
-              function (error, results, fields) {
-                html = html + `장비 업데이트 완료`;
-              });
-          }
-        } else {
-          html = html + `이미 작업 중인 장비`;
-        }
-
-      }
-      setTimeout(() => {
-        html = html + `</br><input type="button" value="닫기" onClick="window.close()">`;
-        response.send(html);
-      }, 500);
-    })
-
-
-});
-//AGV 클릭시 해당 호기의 정보를 보여주는 페이지
-app.get('/AGV_DATA/:AGVnumber', function (request, response) {
-  var number = path.parse(request.params.AGVnumber).base;
-  var connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '1234',
-    database: 'agv_monitor'
-  });
-  var html = db_template.AGV_info(number);
-  connection.connect();
-  connection.query(`SELECT PointNumber,Destination,time FROM agvlocation${number} ORDER BY time DESC`,
-  function (error, results, fields) {
-    for(i in results){
-      html = html + `<tr align=\"center\"><td>${results[i].PointNumber}</td>
-      <td>${results[i].Destination}</td>
-      <td>${results[i].time}</td></tr>`;
-    }
-    html = html +`</tr></table>  </BODY>  </HTML>
-`;
-response.send(html);
-
-});
-});
-
 //route, routing
 //app.get('/', (req, res) => res.send('Hello World!'))
 app.get('/', function (request, response) {
-  var title = 'Welcome';
+  var title = 'Welcome22';
   var description = 'Hello, Node.js';
   var list = template.list(request.list);
   var html = template.HTML(title, list,
     `<h2>${title}</h2>${description}
       <img src = "/images/hello.png">`,
-    `<a href="/F1">F1</a>`
+      `<a href="/create">create</a>`,
+    authStatusUI(request, response)
   );
-  console.log('someone accessed..')
   response.send(html);
 });
+
+app.get('/login', function (request, response) {
+  var title = 'login';
+  var list = template.list(request.list);
+  var html = template.HTML(title, list,
+    `<form action = "login_process" method = "post">
+    <p><input type = "text" name="email" placeholder="email"></p>
+    <p><input type = "password" name="password" placeholder="password"></p>
+    <p><input type = "submit"></p>
+    </form>
+    `,
+    `<a href="/create">create</a>`
+  );
+  response.send(html);
+});
+
+app.post('/login_process', function (request, response) {
+  var post = request.body;
+  if(post.email == 'lee123' && post.password === '1111'){
+      response.writeHead(302, { 
+        'Set-Cookie': [
+          `email=${post.email}`,
+          `password = ${post.password}`,
+          `nickname = egoing`
+      ],
+        Location: `/` });
+        response.end();
+    
+  }else{
+      response.send("<script>alert('login flalse');location.href='/';</script>");
+      return false;
+  }
+});
+
+app.get('/logout_process', function (request, response) {
+  var post = request.body;
+      response.writeHead(302, { 
+        'Set-Cookie': [
+          `email=; Max-Age=0`,
+          `password =; Max-Age=0 `,
+          `nickname =; Max-Age=0`
+      ],
+        Location: `/` });
+        response.end();
+});
+
 app.get('/page/:pageId', function (request, response) {
   var filteredId = path.parse(request.params.pageId).base;
   fs.readFile(`data/${filteredId}`, 'utf8', function (err, description) {
@@ -166,12 +142,16 @@ app.get('/page/:pageId', function (request, response) {
           <form action="/delete_process" method="post">
             <input type="hidden" name="id" value="${sanitizedTitle}">
             <input type="submit" value="delete">
-          </form>`
+          </form>`,authStatusUI(request, response)
     );
     response.send(html);
   });
 });
 app.get('/create', function (request, response) {
+  if(authIsOwner(request,response) === false){
+    response.send("<script>alert('login required');location.href='/';</script>");
+    return false;
+  }
   fs.readdir('./data', function (error, filelist) {
     var title = 'WEB - create';
     var list = template.list(filelist);
@@ -185,11 +165,15 @@ app.get('/create', function (request, response) {
           <input type="submit">
         </p>
       </form>
-    `, '');
+    `, '',authStatusUI(request, response));
     response.send(html);
   });
 });
 app.post('/create_process', function (request, response) {
+  if(authIsOwner(request,response) === false){
+    response.send("<script>alert('login required');location.href='/';</script>");
+    return false;
+  }
   var post = request.body;
   var title = post.title;
   var description = post.description;
@@ -220,7 +204,8 @@ app.get('/update/:pageId', function (request, response) {
           </p>
         </form>
         `,
-        `<a href="/create">create</a> <a href="/update?id=${title}">update</a>`
+        `<a href="/create">create</a> <a href="/update?id=${title}">update</a>`,
+        authStatusUI(request, response)
       );
       response.send(html);
     });
@@ -1050,4 +1035,100 @@ app.get('/F2', function (request, response) {
     response.send(html);
   }, 500);
 
+});
+
+
+//장비 상태를 입력받는 페이지 코드. state파일에 장비유형 별 state정리
+app.get('/state/:equmId', function (request, response) {
+  var filteredId = path.parse(request.params.equmId).base;
+  const file_name = filteredId[0] + filteredId[1];
+//측정 및 검사기는 입력 단계가 많아 따로 처리
+  if (file_name == 'me') {
+    fs.readFile(`./equm_state/${file_name}.txt`, 'utf8', function (err, equm_state) {
+      var title = request.params.pageId;
+      var sanitizedTitle = sanitizeHtml(filteredId);
+      var strArray = equm_state.split('\n');
+      var html = db_template.me_state_list(filteredId, strArray);
+      response.send(html);
+    })
+  } else {
+    fs.readFile(`./equm_state/${file_name}.txt`, 'utf8', function (err, equm_state) {
+      var title = request.params.pageId;
+      var sanitizedTitle = sanitizeHtml(filteredId);
+      var strArray = equm_state.split('\n');
+      var html = db_template.state_list(filteredId, strArray);
+      response.send(html);
+    })
+  }
+});
+//장비 상태 업데이트 처리하는 코드
+app.post('/submit', function (request, response) {
+  var post = request.body;
+  var equm = post.equm;
+  var input_state = post.equm_state;
+  var input_user = post.user_number;
+  var html = ``;
+  var connection = mysql.createConnection(db_info);
+  connection.connect();
+  var sql = `select User from ${equm}_now ORDER BY seq desc`;
+  connection.query(sql,
+    function (error, results, fields) {
+      if (results[0].User == null) {
+        if (input_state != '') {
+          connection.query(`insert into ${equm}_now(State,User, Time) VALUES("${input_state}", ${input_user}, now())`,
+            function (error, results, fields) {
+              html = html + `장비 업데이트 완료`;
+            });
+        } else {
+          html = html + `이미 작업이 종료된 장비`;
+        }
+      } else {
+        if (results[0].User == input_user) {
+          if (input_state == '') {
+            connection.query(`insert into ${equm}_now(Time) VALUES(now())`,
+              function (error, results, fields) {
+                html = html + `장비 종료 완료`;
+              });
+          } else {
+            connection.query(`insert into ${equm}_now(State,User, Time) VALUES("${input_state}", ${input_user}, now())`,
+              function (error, results, fields) {
+                html = html + `장비 업데이트 완료`;
+              });
+          }
+        } else {
+          html = html + `이미 작업 중인 장비`;
+        }
+
+      }
+      setTimeout(() => {
+        html = html + `</br><input type="button" value="닫기" onClick="window.close()">`;
+        response.send(html);
+      }, 500);
+    })
+
+
+});
+//AGV 클릭시 해당 호기의 정보를 보여주는 페이지
+app.get('/AGV_DATA/:AGVnumber', function (request, response) {
+  var number = path.parse(request.params.AGVnumber).base;
+  var connection = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '1234',
+    database: 'agv_monitor'
+  });
+  var html = db_template.AGV_info(number);
+  connection.connect();
+  connection.query(`SELECT PointNumber,Destination,time FROM agvlocation${number} ORDER BY time DESC`,
+  function (error, results, fields) {
+    for(i in results){
+      html = html + `<tr align=\"center\"><td>${results[i].PointNumber}</td>
+      <td>${results[i].Destination}</td>
+      <td>${results[i].time}</td></tr>`;
+    }
+    html = html +`</tr></table>  </BODY>  </HTML>
+`;
+response.send(html);
+
+});
 });
