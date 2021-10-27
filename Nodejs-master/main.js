@@ -14,6 +14,8 @@ var sql = require('./db_sql')();
 const lineReader = require('line-reader');
 var cookie = require('cookie');
 var JSAlert = require("js-alert");
+var bcrypt = require('bcrypt-nodejs'); 
+
 const db_info = {
   host: 'localhost',
   user: 'root',
@@ -27,7 +29,7 @@ function authIsOwner(request, response){
   if(request.headers.cookie){
   cookies = cookie.parse(request.headers.cookie);
   }
-  if(cookies.email === "lee123" && cookies.password ==='1111'){
+  if(cookies.email === "lee1234" && cookies.password ==='4321'){
     isOwner = true;
   }
   return isOwner;
@@ -69,13 +71,13 @@ app.get('/state/*', function (request, response, next) {
 //route, routing
 //app.get('/', (req, res) => res.send('Hello World!'))
 app.get('/', function (request, response) {
-  var title = 'Welcome22';
-  var description = 'Hello, Node.js';
-  var list = template.list(request.list);
-  var html = template.HTML(title, list,
-    `<h2>${title}</h2>${description}
-      <img src = "/images/hello.png">`,
-      `<a href="/create">create</a>`,
+  if(authIsOwner(request,response) === false){
+    response.send("<script>alert('login required');location.href='/login';</script>");
+    return false;
+  }
+
+  var list = template.list();
+  var html = template.HTML(list,
     authStatusUI(request, response)
   );
   response.send(html);
@@ -83,27 +85,72 @@ app.get('/', function (request, response) {
 
 app.get('/login', function (request, response) {
   var title = 'login';
-  var list = template.list(request.list);
-  var html = template.HTML(title, list,
+  var list =  template.list();
+  var html = 
     `<form action = "login_process" method = "post">
+    <h1>LOG IN</h1>
     <p><input type = "text" name="email" placeholder="email"></p>
     <p><input type = "password" name="password" placeholder="password"></p>
     <p><input type = "submit"></p>
     </form>
-    `,
-    `<a href="/create">create</a>`
-  );
+    <a href="/join">User 입력</a>`
+  ;
   response.send(html);
+});
+
+app.get('/join', function (request, response) {
+  var title = 'join';
+  var list =  template.list();
+  var html = 
+    `<form action = "join_process" method = "post">
+    <h1>User 입력</h1>
+    <p><input type = "text" name="id" placeholder="id"></p>
+    <p><input type = "password" name="password" placeholder="password"></p>
+    <p><input type = "text" name="name" placeholder="name"></p>
+    <p><input type = "password" name="admin_code" placeholder="admin_code"></p>
+    <p><input type = "submit"></p>
+    </form>`
+  ;
+  response.send(html);
+});
+
+app.post('/join_process', function (request, response) {
+  var post = request.body;
+  if(post.admin_code == '950122'){
+    var connection4 = mysql.createConnection({
+      host: 'localhost',
+      user: 'root',
+      password: '1234',
+      database: 'meta_0'
+    });
+    // array 사용해서 장비 상태 가져오기
+    connection4.connect();
+    bcrypt.hash(post.password, null, null, function(err, hash){ 
+    var querystring = `insert into enc_user(userid,password_encrypted,name) values("${post.id}","${hash}","${post.name}")`;
+    connection4.query(querystring,
+      function (err, result, field) {
+        if(err){
+          response.send("<script>alert('가입 오류');location.href='/login';</script>");
+          response.end();
+        }else{
+          response.send("<script>alert('입력 완료');location.href='/login';</script>");
+        response.end();
+        }
+      });
+  });
+  }else{
+    response.send("<script>alert('관리자 번호 입력 오류');location.href='/login';</script>");
+  }
 });
 
 app.post('/login_process', function (request, response) {
   var post = request.body;
-  if(post.email == 'lee123' && post.password === '1111'){
+  if(post.email == 'lee1234' && post.password === '4321'){
       response.writeHead(302, { 
         'Set-Cookie': [
-          `email=${post.email}`,
-          `password = ${post.password}`,
-          `nickname = egoing`
+          `email=${post.email}; max-age=3600`,
+          `password = ${post.password}; max-age=3600`,
+          `nickname = leehaein; max-age=3600`
       ],
         Location: `/` });
         response.end();
@@ -126,349 +173,15 @@ app.get('/logout_process', function (request, response) {
         response.end();
 });
 
-app.get('/page/:pageId', function (request, response) {
-  var filteredId = path.parse(request.params.pageId).base;
-  fs.readFile(`data/${filteredId}`, 'utf8', function (err, description) {
-    var title = request.params.pageId;
-    var sanitizedTitle = sanitizeHtml(title);
-    var sanitizedDescription = sanitizeHtml(description, {
-      allowedTags: ['h1']
-    });
-    var list = template.list(request.list);
-    var html = template.HTML(sanitizedTitle, list,
-      `<h2>${sanitizedTitle}</h2>${sanitizedDescription}`,
-      ` <a href="/create">create</a>
-          <a href="/update/${sanitizedTitle}">update</a>
-          <form action="/delete_process" method="post">
-            <input type="hidden" name="id" value="${sanitizedTitle}">
-            <input type="submit" value="delete">
-          </form>`,authStatusUI(request, response)
-    );
-    response.send(html);
-  });
-});
-app.get('/create', function (request, response) {
-  if(authIsOwner(request,response) === false){
-    response.send("<script>alert('login required');location.href='/';</script>");
-    return false;
-  }
-  fs.readdir('./data', function (error, filelist) {
-    var title = 'WEB - create';
-    var list = template.list(filelist);
-    var html = template.HTML(title, list, `
-      <form action="/create_process" method="post">
-        <p><input type="text" name="title" placeholder="title"></p>
-        <p>
-          <textarea name="description" placeholder="description"></textarea>
-        </p>
-        <p>
-          <input type="submit">
-        </p>
-      </form>
-    `, '',authStatusUI(request, response));
-    response.send(html);
-  });
-});
-app.post('/create_process', function (request, response) {
-  if(authIsOwner(request,response) === false){
-    response.send("<script>alert('login required');location.href='/';</script>");
-    return false;
-  }
-  var post = request.body;
-  var title = post.title;
-  var description = post.description;
-  fs.writeFile(`data/${title}`, description, 'utf8', function (err) {
-    response.writeHead(302, { Location: `/?id=${title}` });
-    response.end();
-  });
-});
 
-
-
-app.get('/update/:pageId', function (request, response) {
-  fs.readdir('./data', function (error, filelist) {
-    var filteredId = path.parse(request.params.pageId).base;
-    fs.readFile(`data/${filteredId}`, 'utf8', function (err, description) {
-      var title = request.params.pageId;
-      var list = template.list(filelist);
-      var html = template.HTML(title, list,
-        `
-        <form action="/update_process" method="post">
-          <input type="hidden" name="id" value="${title}">
-          <p><input type="text" name="title" placeholder="title" value="${title}"></p>
-          <p>
-            <textarea name="description" placeholder="description">${description}</textarea>
-          </p>
-          <p>
-            <input type="submit">
-          </p>
-        </form>
-        `,
-        `<a href="/create">create</a> <a href="/update?id=${title}">update</a>`,
-        authStatusUI(request, response)
-      );
-      response.send(html);
-    });
-  });
-});
-
-
-
-app.post('/update_process', function (request, response) {
-  var post = request.body;
-  var id = post.id;
-  var title = post.title;
-  var description = post.description;
-  fs.rename(`data/${id}`, `data/${title}`, function (error) {
-    fs.writeFile(`data/${title}`, description, 'utf8', function (err) {
-      response.redirect(`/?id=${title}`);
-    })
-  });
-});
-app.post('/delete_process', function (request, response) {
-  var post = request.body;
-  var id = post.id;
-  var filteredId = path.parse(id).base;
-  fs.unlink(`data/${filteredId}`, function (error) {
-    response.redirect('/');
-  });
-});
-
-app.get('/F1_2', function (request, response) {
-  let product = new Array;
-  let line_color = new Array;
-  let visibility = new Array;
-  let direction = new Array;
-  let time = new Array;
-  let position = new Array;
-  let destination = new Array;
-  let ScaleX = new Array;
-  let ScaleY = new Array;
-  let equm = new Array("pattern3", "pattern4", "pattern1", "AO1", "TS", "welding10", "welding11",
-    "welding6", "measurement8", "measurement9",
-    "external5", "measurement10", "measurement1", "measurement2",
-    "measurement6", "external3",
-    "welding5","welding1","welding4","measurement3","measurement4",
-    "3D_scanner");
-
-  let today = new Date();
-  let user = new Array;
-  let working = new Array;
-  let working_time = new Array;
-  let state = new Array;
-  let color = new Array('#a5a5a5', '#d4cd00', '#3369d4', '#6f04b0');
-  let vehicle_running = new Array;
-
-
-  //목적지를 보고 line 색상을 결정해주는 함수
-  function return_line(destination) {
-    switch (destination) {
-      case 307:
-      case 2101:
-        return 1;
-        break;
-      case 101:
-      case 406:
-        return 2;
-        break;
-      case 306:
-      case 2307:
-        return 3;
-        break;
-      case 14:
-        return 4;
-        break;
-      default:
-        return 0;
-    }
-  }
-
-  //db접근(AGV)
-  var connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '1234',
-    database: 'agv_monitor'
-  });
-  connection.connect();
-  //SQL문 1번 AGBS_Info 테이블에서 통합정보 제품 운반여부, 차체색상을 가져온다
-  connection.query(`select * from agvs_info ORDER BY VehicleNumber asc`,
-    function (error, results, fields) {
-      for (i in results) {
-        if (results[i].Product) {
-          product.push("initial");
-        } else {
-          product.push("hidden");
-        }
-      }
-    });
-    
-  //        SQL문 2번:: 각 agv 호기 테이블에서 시간, 방향, 마지막위치, 목적지(주행여부)를 가져옴
-  for (var i = 0; i < 4; i++) {
-    connection.query(`select Time,PointNumber,Destination from agvlocation? ORDER BY Time desc limit 1`, [i + 1],
-      function (error, result, fields) {
-        time.push(result[0].Time);
-        position.push(result[0].PointNumber);
-        destination.push(result[0].Destination);
-        if (result[0].Destination < 0) {
-          vehicle_running.push('yellow');
-          direction.push("blank.png");
-        } else if (result[0].Destination > 0 && result[0].Time) {
-          var r = today - result[0].Time;
-          if ((r / 6000) > 80) {
-            vehicle_running.push('yellow');
-            direction.push("blank.png");
-          } else {
-            vehicle_running.push("#02c706");
-            if ((parseInt(result[0].Destination) - parseInt(result[0].PointNumber)) >= 500) {
-              direction.push("up.gif");
-            } else if ((parseInt(result[0].Destination) - parseInt(result[0].PointNumber)) <= -500) {
-              direction.push("down.gif");
-            }
-            else {
-              if (parseInt(result[0].Destination) - parseInt(result[0].PointNumber) > 0) {
-                direction.push("left.gif");
-              }
-              else {
-                direction.push("right.gif");
-              }
-            }
-
-          }
-        } else {
-          vehicle_running.push('red');
-          direction.push("blank.png");
-        }
- 
-          var connection2 = mysql.createConnection({
-            host: 'localhost',
-            user: 'root',
-            password: '1234',
-            database: 'agv_monitor'
-          });
-          connection2.query(`select ScaleX,ScaleY from PointInfo1000 where seq=${parseInt(result[0].PointNumber)}`,
-            function (error, results, fields) {
-              ScaleX.push(results[0].ScaleX);
-              ScaleY.push(results[0].ScaleY);
-            });
-       
-      });
-  }
-
-  // SQL문 3번 장비 정보 
-  var connection3 = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '1234',
-    database: 'meta_0'
-  });
-  // array 사용해서 장비 상태 가져오기
-  connection3.connect();
-  for (i in equm) {
-    connection3.query(`select State,User,Time from ${equm[i]}_now ORDER BY seq desc limit 1`,
-      function (err, result, field) {
-
-        working_time.push(parseInt((today - result[0].Time) / 60000));
-        if (result[0].State == null) {
-          state.push("대기 중..");
-          working.push("off.png");
-          connection3.query(`update user set unset=1 where User_no=${result[0].User}`);
-          user.push("n.png");
-        } else {
-          state.push(result[0].State);
-          working.push("on.gif");
-          connection3.query(`update user set unset=0 where User_no=${result[0].User}`);
-          user.push(`user${result[0].User}.gif`);
-        }
-      });
-  }
-
-
-    for (var i = 0; i < 4; i++) {
-//1층이 아닌 장소에 있는 agv는 2, 3 층 버튼 밑에 위치하도록 
-      if ((parseInt(position[i]) / 1000) > 2) {
-        ScaleX[i] =(420);
-        ScaleY[i] = (68 +  i * 30);
-      } else if ((parseInt(position[i]) / 1000) > 1) {
-        ScaleX[i]=(247);
-        ScaleY[i]=(88 +  i * 30);
-      }
-      if (vehicle_running[i] === "#02c706") {
-        line_color[return_line(destination[i])] = color[i];
-      }
-    }
-    response.send(db_template.meta(ScaleX, ScaleY, time, product, destination, direction, position, equm,
-      working, state, working_time, user, line_color, vehicle_running));
-
-
-});
-app.get('/tester', function (request, response) {
-  var tmp = [1,2,3,4,5,6,7,8,9,7,6,54,3,2,54,62,4315,76]
-    for (var i = 0; i < 4; i++) {
-//1층이 아닌 장소에 있는 agv는 2, 3 층 버튼 밑에 위치하도록 
-      if ((parseInt(tmp[i]) / 1000) > 2) {
-        ScaleX[i] =(420);
-        ScaleY[i] = (68 +  i * 30);
-      } else if ((parseInt(tmp[i]) / 1000) > 1) {
-        ScaleX[i]=(247);
-        ScaleY[i]=(88 +  i * 30);
-      }
-
-    }
-    html = db_template.meta(tmp, tmp, tmp, tmp, tmp, tmp, tmp, tmp,
-      tmp, tmp, tmp, tmp, tmp, tmp);
-  
-
-
-    response.send(html);
-
-
-});
-
-app.get('/F1_3', function (request, response) {
-  let product = new Array;
-  let color = new Array;
-  let visibility = new Array;
-  let direction = new Array;
-  let time = new Array;
-  let position = new Array;
-  let destination = new Array;
-
-  function agv_location(callback) {
-    for (var i = 0; i < 11; i++) {
-      var sql_str = `select Time,PointNumber,Destination from agvlocation${i + 1} ORDER BY Time desc limit 1`;
-      var sql2 = require('./db_sql2')(sql_str);
-      sql2.select(function (err, data) {
-        time.push(data[0].Time);
-        position.push(data[0].PointNumber);
-        destination.push(data[0].Destination);
-      });
-    }
-    callback();
-  }
-  function log_out() {
-    console.log(position);
-  }
-
-  console.log('app.js started');
-
-  //SQL문 1번 AGBS_Info 테이블에서 통합정보 제품 운반여부, 차체색상을 가져온다
-  sql.select(function (err, data) {
-    for (i in data) {
-      product.push(data[i].Product);
-      color.push(data[i].Color);
-      // 차량의 좌, 우 방향과 상품을 화면상에서 숨겨둔다
-      visibility.push("hidden");
-      direction.push("blank.png");
-    }
-    response.send(product);
-    agv_location(log_out);
-  });
-});
 
 //---------------------------------------------------------------------------
 
 app.get('/F1', function (request, response) {
+  if(authIsOwner(request,response) === false){
+    response.send("<script>alert('로그인 필요');location.href='/login';</script>");
+    return false;
+  }
   let product = new Array;
   let line_color = new Array;
   let visibility = new Array;
@@ -648,6 +361,10 @@ app.get('/F1', function (request, response) {
 //------------------------------3층 코드-------------------------------
 
 app.get('/F3', function (request, response) {
+  if(authIsOwner(request,response) === false){
+    response.send("<script>alert('로그인 필요');location.href='/login';</script>");
+    return false;
+  }
   let product = new Array;
   let line_color = new Array;
   let visibility = new Array;
@@ -868,6 +585,10 @@ app.listen(3003, function () {
 
 //임시 ㅁ2층
 app.get('/F2', function (request, response) {
+  if(authIsOwner(request,response) === false){
+    response.send("<script>alert('로그인 필요');location.href='/login';</script>");
+    return false;
+  }
   let product = new Array;
   let line_color = new Array;
   let visibility = new Array;
@@ -1131,4 +852,239 @@ app.get('/AGV_DATA/:AGVnumber', function (request, response) {
 response.send(html);
 
 });
+});
+
+
+
+
+app.get('/F1_2', function (request, response) {
+  let product = new Array;
+  let line_color = new Array;
+  let visibility = new Array;
+  let direction = new Array;
+  let time = new Array;
+  let position = new Array;
+  let destination = new Array;
+  let ScaleX = new Array;
+  let ScaleY = new Array;
+  let equm = new Array("pattern3", "pattern4", "pattern1", "AO1", "TS", "welding10", "welding11",
+    "welding6", "measurement8", "measurement9",
+    "external5", "measurement10", "measurement1", "measurement2",
+    "measurement6", "external3",
+    "welding5","welding1","welding4","measurement3","measurement4",
+    "3D_scanner");
+
+  let today = new Date();
+  let user = new Array;
+  let working = new Array;
+  let working_time = new Array;
+  let state = new Array;
+  let color = new Array('#a5a5a5', '#d4cd00', '#3369d4', '#6f04b0');
+  let vehicle_running = new Array;
+
+
+  //목적지를 보고 line 색상을 결정해주는 함수
+  function return_line(destination) {
+    switch (destination) {
+      case 307:
+      case 2101:
+        return 1;
+        break;
+      case 101:
+      case 406:
+        return 2;
+        break;
+      case 306:
+      case 2307:
+        return 3;
+        break;
+      case 14:
+        return 4;
+        break;
+      default:
+        return 0;
+    }
+  }
+
+  //db접근(AGV)
+  var connection = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '1234',
+    database: 'agv_monitor'
+  });
+  connection.connect();
+  //SQL문 1번 AGBS_Info 테이블에서 통합정보 제품 운반여부, 차체색상을 가져온다
+  connection.query(`select * from agvs_info ORDER BY VehicleNumber asc`,
+    function (error, results, fields) {
+      for (i in results) {
+        if (results[i].Product) {
+          product.push("initial");
+        } else {
+          product.push("hidden");
+        }
+      }
+    });
+    
+  //        SQL문 2번:: 각 agv 호기 테이블에서 시간, 방향, 마지막위치, 목적지(주행여부)를 가져옴
+  for (var i = 0; i < 4; i++) {
+    connection.query(`select Time,PointNumber,Destination from agvlocation? ORDER BY Time desc limit 1`, [i + 1],
+      function (error, result, fields) {
+        time.push(result[0].Time);
+        position.push(result[0].PointNumber);
+        destination.push(result[0].Destination);
+        if (result[0].Destination < 0) {
+          vehicle_running.push('yellow');
+          direction.push("blank.png");
+        } else if (result[0].Destination > 0 && result[0].Time) {
+          var r = today - result[0].Time;
+          if ((r / 6000) > 80) {
+            vehicle_running.push('yellow');
+            direction.push("blank.png");
+          } else {
+            vehicle_running.push("#02c706");
+            if ((parseInt(result[0].Destination) - parseInt(result[0].PointNumber)) >= 500) {
+              direction.push("up.gif");
+            } else if ((parseInt(result[0].Destination) - parseInt(result[0].PointNumber)) <= -500) {
+              direction.push("down.gif");
+            }
+            else {
+              if (parseInt(result[0].Destination) - parseInt(result[0].PointNumber) > 0) {
+                direction.push("left.gif");
+              }
+              else {
+                direction.push("right.gif");
+              }
+            }
+
+          }
+        } else {
+          vehicle_running.push('red');
+          direction.push("blank.png");
+        }
+ 
+          var connection2 = mysql.createConnection({
+            host: 'localhost',
+            user: 'root',
+            password: '1234',
+            database: 'agv_monitor'
+          });
+          connection2.query(`select ScaleX,ScaleY from PointInfo1000 where seq=${parseInt(result[0].PointNumber)}`,
+            function (error, results, fields) {
+              ScaleX.push(results[0].ScaleX);
+              ScaleY.push(results[0].ScaleY);
+            });
+       
+      });
+  }
+
+  // SQL문 3번 장비 정보 
+  var connection3 = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '1234',
+    database: 'meta_0'
+  });
+  // array 사용해서 장비 상태 가져오기
+  connection3.connect();
+  for (i in equm) {
+    connection3.query(`select State,User,Time from ${equm[i]}_now ORDER BY seq desc limit 1`,
+      function (err, result, field) {
+
+        working_time.push(parseInt((today - result[0].Time) / 60000));
+        if (result[0].State == null) {
+          state.push("대기 중..");
+          working.push("off.png");
+          connection3.query(`update user set unset=1 where User_no=${result[0].User}`);
+          user.push("n.png");
+        } else {
+          state.push(result[0].State);
+          working.push("on.gif");
+          connection3.query(`update user set unset=0 where User_no=${result[0].User}`);
+          user.push(`user${result[0].User}.gif`);
+        }
+      });
+  }
+
+
+    for (var i = 0; i < 4; i++) {
+//1층이 아닌 장소에 있는 agv는 2, 3 층 버튼 밑에 위치하도록 
+      if ((parseInt(position[i]) / 1000) > 2) {
+        ScaleX[i] =(420);
+        ScaleY[i] = (68 +  i * 30);
+      } else if ((parseInt(position[i]) / 1000) > 1) {
+        ScaleX[i]=(247);
+        ScaleY[i]=(88 +  i * 30);
+      }
+      if (vehicle_running[i] === "#02c706") {
+        line_color[return_line(destination[i])] = color[i];
+      }
+    }
+    response.send(db_template.meta(ScaleX, ScaleY, time, product, destination, direction, position, equm,
+      working, state, working_time, user, line_color, vehicle_running));
+
+
+});
+app.get('/tester', function (request, response) {
+  var tmp = [1,2,3,4,5,6,7,8,9,7,6,54,3,2,54,62,4315,76]
+    for (var i = 0; i < 4; i++) {
+//1층이 아닌 장소에 있는 agv는 2, 3 층 버튼 밑에 위치하도록 
+      if ((parseInt(tmp[i]) / 1000) > 2) {
+        ScaleX[i] =(420);
+        ScaleY[i] = (68 +  i * 30);
+      } else if ((parseInt(tmp[i]) / 1000) > 1) {
+        ScaleX[i]=(247);
+        ScaleY[i]=(88 +  i * 30);
+      }
+
+    }
+    html = db_template.meta(tmp, tmp, tmp, tmp, tmp, tmp, tmp, tmp,
+      tmp, tmp, tmp, tmp, tmp, tmp);
+  
+
+
+    response.send(html);
+
+
+});
+
+app.get('/F1_3', function (request, response) {
+  let product = new Array;
+  let color = new Array;
+  let visibility = new Array;
+  let direction = new Array;
+  let time = new Array;
+  let position = new Array;
+  let destination = new Array;
+
+  function agv_location(callback) {
+    for (var i = 0; i < 11; i++) {
+      var sql_str = `select Time,PointNumber,Destination from agvlocation${i + 1} ORDER BY Time desc limit 1`;
+      var sql2 = require('./db_sql2')(sql_str);
+      sql2.select(function (err, data) {
+        time.push(data[0].Time);
+        position.push(data[0].PointNumber);
+        destination.push(data[0].Destination);
+      });
+    }
+    callback();
+  }
+  function log_out() {
+    console.log(position);
+  }
+
+  console.log('app.js started');
+
+  //SQL문 1번 AGBS_Info 테이블에서 통합정보 제품 운반여부, 차체색상을 가져온다
+  sql.select(function (err, data) {
+    for (i in data) {
+      product.push(data[i].Product);
+      color.push(data[i].Color);
+      // 차량의 좌, 우 방향과 상품을 화면상에서 숨겨둔다
+      visibility.push("hidden");
+      direction.push("blank.png");
+    }
+    response.send(product);
+    agv_location(log_out);
+  });
 });
