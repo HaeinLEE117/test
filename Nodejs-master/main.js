@@ -24,16 +24,32 @@ const db_info = {
 };
 
 function authIsOwner(request, response){
-  var isOwner = false;
   var cookies = {};
+  var connection4 = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '1234',
+    database: 'meta_0'
+  });
+  
   if(request.headers.cookie){
   cookies = cookie.parse(request.headers.cookie);
+      var querystring = `select password_encrypted from enc_user`;
+    connection4.query(querystring,
+    function (error, results, fields) {
+      for (i in results) {
+        if (cookies.password === results[i].password_encrypted){ 
+          return true;
+        }
+      }
+      return false;
+    });
+  }else{
+    return false;
   }
-  if(cookies.email === "lee1234" && cookies.password ==='4321'){
-    isOwner = true;
+
   }
-  return isOwner;
-}
+
 
 function authStatusUI(request, response){
   var authStatusUI = `<a href = "/login">login<a>`;
@@ -145,20 +161,40 @@ app.post('/join_process', function (request, response) {
 
 app.post('/login_process', function (request, response) {
   var post = request.body;
-  if(post.email == 'lee1234' && post.password === '4321'){
-      response.writeHead(302, { 
-        'Set-Cookie': [
-          `email=${post.email}; max-age=3600`,
-          `password = ${post.password}; max-age=3600`,
-          `nickname = leehaein; max-age=3600`
-      ],
-        Location: `/` });
-        response.end();
-    
-  }else{
-      response.send("<script>alert('login flalse');location.href='/';</script>");
-      return false;
-  }
+  var id_check = false;
+      var connection4 = mysql.createConnection({
+      host: 'localhost',
+      user: 'root',
+      password: '1234',
+      database: 'meta_0'
+    });
+  var querystring = `select userid from enc_user`;
+  connection4.query(querystring,
+  function (error, results, fields) {
+    for (i in results) {
+      if (results[i].userid == post.email){
+        var querystring2 = `select * from enc_user where userid = '${post.email}'`;
+        connection4.query(querystring2,
+          function (error, results, fields) {
+            if(error){
+            response.send("<script>alert('log_in_error');location.href='/login';</script>");
+            response.end();
+          }
+          else{
+            if(bcrypt.compareSync(post.password,results[0].password_encrypted)){
+              response.writeHead(302, { 
+                'Set-Cookie': [
+                  `email=${post.email}; max-age=3600`,
+                  `password = ${results[0].password_encrypted}; max-age=3600`
+              ],
+                Location: `/` });
+                response.end();
+            }
+          }
+          });
+      }
+    }
+  });
 });
 
 app.get('/logout_process', function (request, response) {
