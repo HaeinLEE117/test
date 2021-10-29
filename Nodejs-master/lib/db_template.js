@@ -47,6 +47,7 @@ module.exports = {
 
     </HEAD>
     <BODY>
+    <h1><a href="/">MAIN</a></h1>
     <div class="floor_1">
     <div class="container1">
     <div class="container2">
@@ -55,6 +56,7 @@ module.exports = {
         <div class="f_button"><a href="F3" target="_self">F3</a></div>
     </div>
 </div>
+
 <div id = "line0"></div>
     `;
 
@@ -308,6 +310,8 @@ module.exports = {
 
     </HEAD>
     <BODY>
+    
+    <h1><a href="/">MAIN</a></h1>
     <div class="floor_3">
     <div class="container1">
     <div class="container2">
@@ -403,6 +407,7 @@ module.exports = {
 
     </HEAD>
     <BODY>
+    <h1><a href="/">MAIN</a></h1>
     <div class="floor_2">
     <div class="container1">
     <div class="container2">

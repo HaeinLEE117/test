@@ -118,14 +118,18 @@ app.get('/join', function (request, response) {
   var title = 'join';
   var list =  template.list();
   var html = 
-    `<form action = "join_process" method = "post">
-    <h1>User 입력</h1>
-    <p><input type = "text" name="id" placeholder="id"></p>
-    <p><input type = "password" name="password" placeholder="password"></p>
-    <p><input type = "text" name="name" placeholder="name"></p>
-    <p><input type = "password" name="admin_code" placeholder="admin_code"></p>
+    `<h1>User 입력</h1>
+    <HEAD>
+    <link rel="stylesheet" href="css/style2_2.css" />
+    </HEAD>
+    <div class="container">
+    <form action = "join_process" method = "post">
+    <p> <label for="id">ID: </label><input type = "text" name="id" placeholder="영문+숫자만 입력"></p>
+    <p><label for="password">password: </label><input type = "password" name="password" placeholder="영문+숫자만 입력"></p>
+    <p><label for="name">name: </label><input type = "text" name="name" placeholder="영문+숫자만 입력"></p>
+    <p><label for="admin_code">관리자번호 입력: </label><input type = "password" name="admin_code" placeholder="admin_code"></p>
     <p><input type = "submit"></p>
-    </form>`
+    </form></div>`
   ;
   response.send(html);
 });
@@ -194,6 +198,7 @@ app.post('/login_process', function (request, response) {
           });
       }
     }
+    
   });
 });
 
