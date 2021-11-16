@@ -239,7 +239,7 @@ app.get('/F1', function (request, response) {
     "3D_scanner");
 
   let today = new Date();
-  let user = new Array;
+  let order_no = new Array;
   let working = new Array;
   let working_time = new Array;
   let state = new Array;
@@ -353,20 +353,18 @@ app.get('/F1', function (request, response) {
   // array 사용해서 장비 상태 가져오기
   connection3.connect();
   for (i in equm) {
-    connection3.query(`select State,User,Time from ${equm[i]}_now ORDER BY seq desc limit 1`,
+    connection3.query(`select state,order_no,time from ${equm[i]}_status ORDER BY seq desc limit 1`,
       function (err, result, field) {
 
-        working_time.push(parseInt((today - result[0].Time) / 60000));
-        if (result[0].State == null) {
+        working_time.push(parseInt((today - result[0].time) / 60000));
+        if (result[0].state === "대기중") {
           state.push("대기 중..");
           working.push("off.png");
-          connection3.query(`update user set unset=1 where User_no=${result[0].User}`);
-          user.push("n.png");
+          order_no.push(result[0].order_no);
         } else {
-          state.push(result[0].State);
+          state.push(result[0].state);
           working.push("on.gif");
-          connection3.query(`update user set unset=0 where User_no=${result[0].User}`);
-          user.push(`user${result[0].User}.gif`);
+          order_no.push(`${result[0].order_no}`);
         }
       });
   }
@@ -390,7 +388,7 @@ app.get('/F1', function (request, response) {
       }
     }
     html = db_template.meta(ScaleX, ScaleY, time, product, destination, direction, position, equm,
-      working, state, working_time, user, line_color, vehicle_running);
+      working, state, working_time, order_no, line_color, vehicle_running);
   }, 300);
 
   setTimeout(() => {
@@ -768,7 +766,6 @@ app.get('/state/:equmId', function (request, response) {
   if (file_name == 'me') {
     fs.readFile(`./equm_state/${file_name}.txt`, 'utf8', function (err, equm_state) {
       var title = request.params.pageId;
-      var sanitizedTitle = sanitizeHtml(filteredId);
       var strArray = equm_state.split('\n');
       var html = db_template.me_state_list(filteredId, strArray);
       response.send(html);
@@ -776,7 +773,6 @@ app.get('/state/:equmId', function (request, response) {
   } else {
     fs.readFile(`./equm_state/${file_name}.txt`, 'utf8', function (err, equm_state) {
       var title = request.params.pageId;
-      var sanitizedTitle = sanitizeHtml(filteredId);
       var strArray = equm_state.split('\n');
       var html = db_template.state_list(filteredId, strArray);
       response.send(html);
@@ -1195,4 +1191,28 @@ app.get('/washer_input/:equ_name/:process/:order_no', async (req, res) => {
   }
     connection.end();
   });
+});
+
+
+
+app.get('/create_equ_table/F1', async (req, res) => {
+  let equm = new Array("pattern3", "pattern4", "pattern1", "AO1", "TS", "welding10", "welding11",
+    "welding6", "measurement8", "measurement9",
+    "external5", "measurement10", "measurement1", "measurement2",
+    "measurement6", "external3",
+    "welding5","welding1","welding4","measurement3","measurement4",
+    "3D_scanner");
+    html = ``;
+    for(i in equm){
+      html = html +`insert into ${equm[i]}_status(time, order_no) values(now(),"GDDF720211114009");<br>`;
+      
+      /*
+    html = html+`create table ${equm[i]}_status(seq bigint primary key auto_increment not null,
+      time datetime not null,
+      state varchar(32) not null default 0,
+      order_no varchar(64));<br>`;
+      */
+    }
+
+    res.send(html);
 });

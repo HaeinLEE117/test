@@ -2,7 +2,7 @@ var mysql = require('mysql');
 
 module.exports = {
   meta: function (ScaleX, ScaleY, time, product, destination, direction, position, equm
-    , working, state, working_time, user, line_color, vehicle_running) {
+    , working, state, working_time, order_no, line_color, vehicle_running) {
 //      console.log(product);
     //장비 위치
     let left = new Array(522, 552, 856, 186, 191, 810, 1010, 
@@ -82,7 +82,7 @@ module.exports = {
       , 'width=430,height=500,location=no,status=no,scrollbars=yes');">${equm[i]}</div>
       <div class="state_box" style="left:${left[i]}px; top:${top[i] + 50}px;"><img src="src/${working[i]}" style="margin-right:3px;" />
       ${state[i]} ${working_time[i]}분 경과..</div>
-      <div class="user" style="left: ${left[i] + 83}px; top:${top[i] - 8}px;"><img id="user_img" src="src/${user[i]}" /></div>
+      <div class="state_box" style="left: ${left[i]}px; top:${top[i] + 75}px;">${order_no[i]}</div>
       `;
     }
 
