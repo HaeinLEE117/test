@@ -81,8 +81,7 @@ module.exports = {
       onclick="window.open('/state/${equm[i]}', 'window_name'
       , 'width=430,height=500,location=no,status=no,scrollbars=yes');">${equm[i]}</div>
       <div class="state_box" style="left:${left[i]}px; top:${top[i] + 50}px;"><img src="src/${working[i]}" style="margin-right:3px;" />
-      ${state[i]} ${working_time[i]}분 경과..</div>
-      <div class="state_box" style="left: ${left[i]}px; top:${top[i] + 75}px;">${order_no[i]}</div>
+      ${state[i]} ${working_time[i]}분 경과..<br>${order_no[i]}</div>
       `;
     }
 
@@ -152,7 +151,7 @@ module.exports = {
     html = html + `<p>
                     <strong><input type="radio" name="equm_state" value=''>작업종료</strong>
                 </p>
-                <p><br /><strong>작업자 번호::  </strong><input type="text" name="user_number" placeholder="숫자로 입력 1~5"></p>
+                <p><br /><strong>수주 번호::  </strong><input type="text" name="user_number" placeholder=""></p>
     
                 <input type='submit'>
             </form>
@@ -223,7 +222,7 @@ module.exports = {
                 <br />
                 <strong><input type="radio" name="equm_state" value=''>작업종료</strong>
             </p>
-            <p><br /><strong>작업자 번호::  </strong><input type="text" name="user_number" placeholder="숫자로 입력 1~5"></p>
+            <p><br /><strong>수주 번호::  </strong><input type="text" name="user_number" placeholder=""></p>
 
             <input type='submit'>
         </form>
@@ -467,7 +466,7 @@ module.exports = {
     html = html + `<p>
                     <strong><input type="radio" name="equm_state" value=''>작업종료</strong>
                 </p>
-                <p><br /><strong>작업자 번호::  </strong><input type="text" name="user_number" placeholder="숫자로 입력 1~5"></p>
+                <p><br /><strong>수주 번호::  </strong><input type="text" name="user_number" placeholder=""></p>
     
                 <input type='submit'>
             </form>

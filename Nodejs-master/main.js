@@ -14,7 +14,7 @@ var sql = require('./db_sql')();
 const lineReader = require('line-reader');
 var cookie = require('cookie');
 var JSAlert = require("js-alert");
-var bcrypt = require('bcrypt-nodejs'); 
+var bcrypt = require('bcrypt-nodejs');
 
 const db_info = {
   host: 'localhost',
@@ -23,7 +23,7 @@ const db_info = {
   database: 'meta_0'
 };
 
-function authIsOwner(request, response){
+function authIsOwner(request, response) {
   var cookies = {};
   var connection4 = mysql.createConnection({
     host: 'localhost',
@@ -31,29 +31,29 @@ function authIsOwner(request, response){
     password: '1234',
     database: 'meta_0'
   });
-  
-  if(request.headers.cookie){
-  cookies = cookie.parse(request.headers.cookie);
-      var querystring = `select password_encrypted from enc_user`;
+
+  if (request.headers.cookie) {
+    cookies = cookie.parse(request.headers.cookie);
+    var querystring = `select password_encrypted from enc_user`;
     connection4.query(querystring,
-    function (error, results, fields) {
-      for (i in results) {
-        if (cookies.password === results[i].password_encrypted){ 
-          return true;
+      function (error, results, fields) {
+        for (i in results) {
+          if (cookies.password === results[i].password_encrypted) {
+            return true;
+          }
         }
-      }
-      return false;
-    });
-  }else{
+        return false;
+      });
+  } else {
     return false;
   }
 
-  }
+}
 
 
-function authStatusUI(request, response){
+function authStatusUI(request, response) {
   var authStatusUI = `<a href = "/login">login<a>`;
-  if(authIsOwner(request, response)){
+  if (authIsOwner(request, response)) {
     authStatusUI = `<a href = "/logout_process">logout<a>`;
   }
   return authStatusUI;
@@ -67,14 +67,14 @@ app.use(express.static(__dirname + '/public'));
 //미들웨어 작성 예제 + 쿠키 처리
 app.use(bodyParser.urlencoded({ extended: false }));
 app.get('*', function (request, response, next) {
-  var isOwner = authIsOwner(request,response);
+  var isOwner = authIsOwner(request, response);
 
 
   request.authStatusUI = authStatusUI;
   //get으로 접속하는 모든 페이지에 ./data에 존재하는 filelist를 request.list에 담아 보냄
   fs.readdir('./data', function (error, filelist) {
     request.list = filelist;
-    next(); 
+    next();
   });
 });
 app.get('/state/*', function (request, response, next) {
@@ -87,7 +87,7 @@ app.get('/state/*', function (request, response, next) {
 //route, routing
 //app.get('/', (req, res) => res.send('Hello World!'))
 app.get('/', function (request, response) {
-  if(authIsOwner(request,response) === false){
+  if (authIsOwner(request, response) === false) {
     response.send("<script>alert('로그인 필요');location.href='/login';</script>");
     return false;
   }
@@ -100,8 +100,8 @@ app.get('/', function (request, response) {
 
 app.get('/login', function (request, response) {
   var title = 'login';
-  var list =  template.list();
-  var html = 
+  var list = template.list();
+  var html =
     `<form action = "login_process" method = "post">
     <h1>LOG IN</h1>
     <p><input type = "text" name="email" placeholder="id"></p>
@@ -109,14 +109,14 @@ app.get('/login', function (request, response) {
     <p><input type = "submit"></p>
     </form>
     <a href="/join">User 입력</a>`
-  ;
+    ;
   response.send(html);
 });
 
 app.get('/join', function (request, response) {
   var title = 'join';
-  var list =  template.list();
-  var html = 
+  var list = template.list();
+  var html =
     `<h1>User 입력</h1>
     <HEAD>
     <link rel="stylesheet" href="css/style2_2.css" />
@@ -129,13 +129,13 @@ app.get('/join', function (request, response) {
     <p><label for="admin_code">관리자번호 입력: </label><input type = "password" name="admin_code" placeholder="admin_code"></p>
     <p><input type = "submit"></p>
     </form></div>`
-  ;
+    ;
   response.send(html);
 });
 
 app.post('/join_process', function (request, response) {
   var post = request.body;
-  if(post.admin_code == '950122'){
+  if (post.admin_code == '950122') {
     var connection4 = mysql.createConnection({
       host: 'localhost',
       user: 'root',
@@ -144,20 +144,20 @@ app.post('/join_process', function (request, response) {
     });
     // array 사용해서 장비 상태 가져오기
     connection4.connect();
-    bcrypt.hash(post.password, null, null, function(err, hash){ 
-    var querystring = `insert into enc_user(userid,password_encrypted,name) values("${post.id}","${hash}","${post.name}")`;
-    connection4.query(querystring,
-      function (err, result, field) {
-        if(err){
-          response.send("<script>alert('가입 오류');location.href='/login';</script>");
-          response.end();
-        }else{
-          response.send("<script>alert('입력 완료');location.href='/login';</script>");
-        response.end();
-        }
-      });
-  });
-  }else{
+    bcrypt.hash(post.password, null, null, function (err, hash) {
+      var querystring = `insert into enc_user(userid,password_encrypted,name) values("${post.id}","${hash}","${post.name}")`;
+      connection4.query(querystring,
+        function (err, result, field) {
+          if (err) {
+            response.send("<script>alert('가입 오류');location.href='/login';</script>");
+            response.end();
+          } else {
+            response.send("<script>alert('입력 완료');location.href='/login';</script>");
+            response.end();
+          }
+        });
+    });
+  } else {
     response.send("<script>alert('관리자 번호 입력 오류');location.href='/login';</script>");
   }
 });
@@ -165,52 +165,54 @@ app.post('/join_process', function (request, response) {
 app.post('/login_process', function (request, response) {
   var post = request.body;
   var id_check = false;
-      var connection4 = mysql.createConnection({
-      host: 'localhost',
-      user: 'root',
-      password: '1234',
-      database: 'meta_0'
-    });
+  var connection4 = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '1234',
+    database: 'meta_0'
+  });
   var querystring = `select userid from enc_user`;
   connection4.query(querystring,
-  function (error, results, fields) {
-    for (i in results) {
-      if (results[i].userid == post.email){
-        var querystring2 = `select * from enc_user where userid = '${post.email}'`;
-        connection4.query(querystring2,
-          function (error, results, fields) {
-            if(error){
-            response.send("<script>alert('log_in_error');location.href='/login';</script>");
-            response.end();
-          }
-          else{
-            if(bcrypt.compareSync(post.password,results[0].password_encrypted)){
-              response.writeHead(302, { 
-                'Set-Cookie': [
-                  `email=${post.email}; max-age=3600`,
-                  `password = ${results[0].password_encrypted}; max-age=3600`
-              ],
-                Location: `/` });
+    function (error, results, fields) {
+      for (i in results) {
+        if (results[i].userid == post.email) {
+          var querystring2 = `select * from enc_user where userid = '${post.email}'`;
+          connection4.query(querystring2,
+            function (error, results, fields) {
+              if (error) {
+                response.send("<script>alert('log_in_error');location.href='/login';</script>");
                 response.end();
-            }
-          }
-          });
+              }
+              else {
+                if (bcrypt.compareSync(post.password, results[0].password_encrypted)) {
+                  response.writeHead(302, {
+                    'Set-Cookie': [
+                      `email=${post.email}; max-age=3600`,
+                      `password = ${results[0].password_encrypted}; max-age=3600`
+                    ],
+                    Location: `/`
+                  });
+                  response.end();
+                }
+              }
+            });
+        }
       }
-    }
-    
-  });
+
+    });
 });
 
 app.get('/logout_process', function (request, response) {
   var post = request.body;
-      response.writeHead(302, { 
-        'Set-Cookie': [
-          `email=; Max-Age=0`,
-          `password =; Max-Age=0 `,
-          `nickname =; Max-Age=0`
-      ],
-        Location: `/` });
-        response.end();
+  response.writeHead(302, {
+    'Set-Cookie': [
+      `email=; Max-Age=0`,
+      `password =; Max-Age=0 `,
+      `nickname =; Max-Age=0`
+    ],
+    Location: `/`
+  });
+  response.end();
 });
 
 
@@ -218,7 +220,7 @@ app.get('/logout_process', function (request, response) {
 //---------------------------------------------------------------------------
 
 app.get('/F1', function (request, response) {
-  if(authIsOwner(request,response) === false){
+  if (authIsOwner(request, response) === false) {
     response.send("<script>alert('로그인 필요');location.href='/login';</script>");
     return false;
   }
@@ -235,7 +237,7 @@ app.get('/F1', function (request, response) {
     "welding6", "measurement8", "measurement9",
     "external5", "measurement10", "measurement1", "measurement2",
     "measurement6", "external3",
-    "welding5","welding1","welding4","measurement3","measurement4",
+    "welding5", "welding1", "welding4", "measurement3", "measurement4",
     "3D_scanner");
 
   let today = new Date();
@@ -326,20 +328,20 @@ app.get('/F1', function (request, response) {
           vehicle_running.push('red');
           direction.push("blank.png");
         }
- 
-          var connection2 = mysql.createConnection({
-            host: 'localhost',
-            user: 'root',
-            password: '1234',
-            database: 'agv_monitor'
+
+        var connection2 = mysql.createConnection({
+          host: 'localhost',
+          user: 'root',
+          password: '1234',
+          database: 'agv_monitor'
+        });
+
+        connection2.query(`select ScaleX,ScaleY from PointInfo1000 where seq=${parseInt(result[0].PointNumber)}`,
+          function (error, results, fields) {
+            ScaleX.push(results[0].ScaleX);
+            ScaleY.push(results[0].ScaleY);
           });
-          
-          connection2.query(`select ScaleX,ScaleY from PointInfo1000 where seq=${parseInt(result[0].PointNumber)}`,
-            function (error, results, fields) {
-              ScaleX.push(results[0].ScaleX);
-              ScaleY.push(results[0].ScaleY);
-            });
-       
+
       });
   }
 
@@ -357,7 +359,7 @@ app.get('/F1', function (request, response) {
       function (err, result, field) {
 
         working_time.push(parseInt((today - result[0].time) / 60000));
-        if (result[0].state === "대기중") {
+        if (result[0].state === "") {
           state.push("대기 중..");
           working.push("off.png");
           order_no.push(result[0].order_no);
@@ -373,15 +375,15 @@ app.get('/F1', function (request, response) {
   var html = ``;
 
   setTimeout(() => {
-//    console.log(product);
+    //    console.log(product);
     for (var i = 0; i < 4; i++) {
-//1층이 아닌 장소에 있는 agv는 2, 3 층 버튼 밑에 위치하도록 
+      //1층이 아닌 장소에 있는 agv는 2, 3 층 버튼 밑에 위치하도록 
       if ((parseInt(position[i]) / 1000) > 2) {
-        ScaleX[i] =(420);
-        ScaleY[i] = (68 +  i * 30);
+        ScaleX[i] = (420);
+        ScaleY[i] = (68 + i * 30);
       } else if ((parseInt(position[i]) / 1000) > 1) {
-        ScaleX[i]=(247);
-        ScaleY[i]=(88 +  i * 30);
+        ScaleX[i] = (247);
+        ScaleY[i] = (88 + i * 30);
       }
       if (vehicle_running[i] === "#02c706") {
         line_color[return_line(destination[i])] = color[i];
@@ -400,7 +402,7 @@ app.get('/F1', function (request, response) {
 //------------------------------3층 코드-------------------------------
 
 app.get('/F3', function (request, response) {
-  if(authIsOwner(request,response) === false){
+  if (authIsOwner(request, response) === false) {
     response.send("<script>alert('로그인 필요');location.href='/login';</script>");
     return false;
   }
@@ -413,7 +415,7 @@ app.get('/F3', function (request, response) {
   let destination = new Array;
   let ScaleX = new Array;
   let ScaleY = new Array;
-  let equm = new Array("welding8","welding9","measurement11","coating1","coating2","coating3");
+  let equm = new Array("welding8", "welding9", "measurement11", "coating1", "coating2", "coating3");
 
   let today = new Date();
   let user = new Array;
@@ -502,19 +504,19 @@ app.get('/F3', function (request, response) {
           vehicle_running.push('red');
           direction.push("blank.png");
         }
-        
-          var connection2 = mysql.createConnection({
-            host: 'localhost',
-            user: 'root',
-            password: '1234',
-            database: 'agv_monitor'
+
+        var connection2 = mysql.createConnection({
+          host: 'localhost',
+          user: 'root',
+          password: '1234',
+          database: 'agv_monitor'
+        });
+        connection2.query(`select ScaleX,ScaleY from PointInfo1000 where seq=${parseInt(result[0].PointNumber)}`,
+          function (error, results, fields) {
+            ScaleX.push(results[0].ScaleX);
+            ScaleY.push(results[0].ScaleY);
           });
-          connection2.query(`select ScaleX,ScaleY from PointInfo1000 where seq=${parseInt(result[0].PointNumber)}`,
-            function (error, results, fields) {
-              ScaleX.push(results[0].ScaleX);
-              ScaleY.push(results[0].ScaleY);
-            });
-        
+
       });
   }
 
@@ -551,13 +553,13 @@ app.get('/F3', function (request, response) {
 
   setTimeout(() => {
     for (var i = 0; i < 4; i++) {
-//3층이 아닌 장소에 있는 agv는 1,2층 버튼 밑에 위치하도록 
+      //3층이 아닌 장소에 있는 agv는 1,2층 버튼 밑에 위치하도록 
       if ((parseInt(position[i]) / 1000) < 1) {
         ScaleX[i] = 85;
         ScaleY[i] = (68 + i * 30);
       } else if ((parseInt(position[i]) / 1000) < 2) {
         ScaleX[i] = 219;
-        ScaleY[i] = (88 + i *30);
+        ScaleY[i] = (88 + i * 30);
       }
       if (vehicle_running[i] === "#02c706") {
         line_color[return_line(destination[i])] = color[i];
@@ -584,7 +586,7 @@ app.listen(3003, function () {
 
 //임시 ㅁ2층
 app.get('/F2', function (request, response) {
-  if(authIsOwner(request,response) === false){
+  if (authIsOwner(request, response) === false) {
     response.send("<script>alert('로그인 필요');location.href='/login';</script>");
     return false;
   }
@@ -597,7 +599,7 @@ app.get('/F2', function (request, response) {
   let destination = new Array;
   let ScaleX = new Array;
   let ScaleY = new Array;
-  let equm = new Array("welding8","welding9","measurement11","coating1","coating2","coating3");
+  let equm = new Array("welding8", "welding9", "measurement11", "coating1", "coating2", "coating3");
 
   let today = new Date();
   let user = new Array;
@@ -686,19 +688,19 @@ app.get('/F2', function (request, response) {
           vehicle_running.push('red');
           direction.push("blank.png");
         }
-        
-          var connection2 = mysql.createConnection({
-            host: 'localhost',
-            user: 'root',
-            password: '1234',
-            database: 'agv_monitor'
+
+        var connection2 = mysql.createConnection({
+          host: 'localhost',
+          user: 'root',
+          password: '1234',
+          database: 'agv_monitor'
+        });
+        connection2.query(`select ScaleX,ScaleY from PointInfo1000 where seq=${parseInt(result[0].PointNumber)}`,
+          function (error, results, fields) {
+            ScaleX.push(results[0].ScaleX);
+            ScaleY.push(results[0].ScaleY);
           });
-          connection2.query(`select ScaleX,ScaleY from PointInfo1000 where seq=${parseInt(result[0].PointNumber)}`,
-            function (error, results, fields) {
-              ScaleX.push(results[0].ScaleX);
-              ScaleY.push(results[0].ScaleY);
-            });
-        
+
       });
   }
 
@@ -735,13 +737,13 @@ app.get('/F2', function (request, response) {
 
   setTimeout(() => {
     for (var i = 0; i < 4; i++) {
-//3층이 아닌 장소에 있는 agv는 1,2층 버튼 밑에 위치하도록 
+      //3층이 아닌 장소에 있는 agv는 1,2층 버튼 밑에 위치하도록 
       if ((parseInt(position[i]) / 1000) < 1) {
         ScaleX[i] = 85;
         ScaleY[i] = (68 + i * 30);
       } else if ((parseInt(position[i]) / 1000) > 2) {
         ScaleX[i] = 405619;
-        ScaleY[i] = (88 + i *30);
+        ScaleY[i] = (88 + i * 30);
       }
       if (vehicle_running[i] === "#02c706") {
         line_color[return_line(destination[i])] = color[i];
@@ -762,17 +764,15 @@ app.get('/F2', function (request, response) {
 app.get('/state/:equmId', function (request, response) {
   var filteredId = path.parse(request.params.equmId).base;
   const file_name = filteredId[0] + filteredId[1];
-//측정 및 검사기는 입력 단계가 많아 따로 처리
+  //측정 및 검사기는 입력 단계가 많아 따로 처리
   if (file_name == 'me') {
     fs.readFile(`./equm_state/${file_name}.txt`, 'utf8', function (err, equm_state) {
-      var title = request.params.pageId;
       var strArray = equm_state.split('\n');
       var html = db_template.me_state_list(filteredId, strArray);
       response.send(html);
     })
   } else {
     fs.readFile(`./equm_state/${file_name}.txt`, 'utf8', function (err, equm_state) {
-      var title = request.params.pageId;
       var strArray = equm_state.split('\n');
       var html = db_template.state_list(filteredId, strArray);
       response.send(html);
@@ -788,44 +788,31 @@ app.post('/submit', function (request, response) {
   var html = ``;
   var connection = mysql.createConnection(db_info);
   connection.connect();
-  var sql = `select User from ${equm}_now ORDER BY seq desc`;
-  connection.query(sql,
-    function (error, results, fields) {
-      if (results[0].User == null) {
-        if (input_state != '') {
-          connection.query(`insert into ${equm}_now(State,User, Time) VALUES("${input_state}", ${input_user}, now())`,
-            function (error, results, fields) {
-              html = html + `장비 업데이트 완료`;
-            });
-        } else {
-          html = html + `이미 작업이 종료된 장비`;
-        }
-      } else {
-        if (results[0].User == input_user) {
-          if (input_state == '') {
-            connection.query(`insert into ${equm}_now(Time) VALUES(now())`,
-              function (error, results, fields) {
-                html = html + `장비 종료 완료`;
-              });
-          } else {
-            connection.query(`insert into ${equm}_now(State,User, Time) VALUES("${input_state}", ${input_user}, now())`,
-              function (error, results, fields) {
-                html = html + `장비 업데이트 완료`;
-              });
-          }
-        } else {
-          html = html + `이미 작업 중인 장비`;
-        }
 
-      }
-      setTimeout(() => {
-        html = html + `</br><input type="button" value="닫기" onClick="window.close()">`;
-        response.send(html);
-      }, 500);
-    })
+
+  if (input_state === "") {
+    connection.query(`insert into ${equm}_status(Time) VALUES(now())`,
+      function (error, results, fields) {
+        html = html + `장비 종료 완료`;
+      });
+  } else {
+    if (input_state == null) {
+      html = html + "오류 입력";
+    } else {
+      connection.query(`insert into ${equm}_status(state,order_no, time) VALUES("${input_state}", "${input_user}", now())`,
+        function (error, results, fields) {
+          html = html + `장비 업데이트 완료`;
+        });
+    }
+  }
+  setTimeout(() => {
+    html = html + `</br><input type="button" value="닫기" onClick="window.close()">`;
+    response.send(html);
+  }, 500);
 
 
 });
+
 //AGV 클릭시 해당 호기의 정보를 보여주는 페이지
 app.get('/AGV_DATA/:AGVnumber', function (request, response) {
   var number = path.parse(request.params.AGVnumber).base;
@@ -838,17 +825,17 @@ app.get('/AGV_DATA/:AGVnumber', function (request, response) {
   var html = db_template.AGV_info(number);
   connection.connect();
   connection.query(`SELECT PointNumber,Destination,time FROM agvlocation${number} ORDER BY time DESC`,
-  function (error, results, fields) {
-    for(i in results){
-      html = html + `<tr align=\"center\"><td>${results[i].PointNumber}</td>
+    function (error, results, fields) {
+      for (i in results) {
+        html = html + `<tr align=\"center\"><td>${results[i].PointNumber}</td>
       <td>${results[i].Destination}</td>
       <td>${results[i].time}</td></tr>`;
-    }
-    html = html +`</tr></table>  </BODY>  </HTML>
+      }
+      html = html + `</tr></table>  </BODY>  </HTML>
 `;
-response.send(html);
+      response.send(html);
 
-});
+    });
 });
 
 //혀ㅛ
@@ -868,7 +855,7 @@ app.get('/F1_2', function (request, response) {
     "welding6", "measurement8", "measurement9",
     "external5", "measurement10", "measurement1", "measurement2",
     "measurement6", "external3",
-    "welding5","welding1","welding4","measurement3","measurement4",
+    "welding5", "welding1", "welding4", "measurement3", "measurement4",
     "3D_scanner");
 
   let today = new Date();
@@ -922,7 +909,7 @@ app.get('/F1_2', function (request, response) {
         }
       }
     });
-    
+
   //        SQL문 2번:: 각 agv 호기 테이블에서 시간, 방향, 마지막위치, 목적지(주행여부)를 가져옴
   for (var i = 0; i < 4; i++) {
     connection.query(`select Time,PointNumber,Destination from agvlocation? ORDER BY Time desc limit 1`, [i + 1],
@@ -959,19 +946,19 @@ app.get('/F1_2', function (request, response) {
           vehicle_running.push('red');
           direction.push("blank.png");
         }
- 
-          var connection2 = mysql.createConnection({
-            host: 'localhost',
-            user: 'root',
-            password: '1234',
-            database: 'agv_monitor'
+
+        var connection2 = mysql.createConnection({
+          host: 'localhost',
+          user: 'root',
+          password: '1234',
+          database: 'agv_monitor'
+        });
+        connection2.query(`select ScaleX,ScaleY from PointInfo1000 where seq=${parseInt(result[0].PointNumber)}`,
+          function (error, results, fields) {
+            ScaleX.push(results[0].ScaleX);
+            ScaleY.push(results[0].ScaleY);
           });
-          connection2.query(`select ScaleX,ScaleY from PointInfo1000 where seq=${parseInt(result[0].PointNumber)}`,
-            function (error, results, fields) {
-              ScaleX.push(results[0].ScaleX);
-              ScaleY.push(results[0].ScaleY);
-            });
-       
+
       });
   }
 
@@ -1004,43 +991,43 @@ app.get('/F1_2', function (request, response) {
   }
 
 
-    for (var i = 0; i < 4; i++) {
-//1층이 아닌 장소에 있는 agv는 2, 3 층 버튼 밑에 위치하도록 
-      if ((parseInt(position[i]) / 1000) > 2) {
-        ScaleX[i] =(420);
-        ScaleY[i] = (68 +  i * 30);
-      } else if ((parseInt(position[i]) / 1000) > 1) {
-        ScaleX[i]=(247);
-        ScaleY[i]=(88 +  i * 30);
-      }
-      if (vehicle_running[i] === "#02c706") {
-        line_color[return_line(destination[i])] = color[i];
-      }
+  for (var i = 0; i < 4; i++) {
+    //1층이 아닌 장소에 있는 agv는 2, 3 층 버튼 밑에 위치하도록 
+    if ((parseInt(position[i]) / 1000) > 2) {
+      ScaleX[i] = (420);
+      ScaleY[i] = (68 + i * 30);
+    } else if ((parseInt(position[i]) / 1000) > 1) {
+      ScaleX[i] = (247);
+      ScaleY[i] = (88 + i * 30);
     }
-    response.send(db_template.meta(ScaleX, ScaleY, time, product, destination, direction, position, equm,
-      working, state, working_time, user, line_color, vehicle_running));
+    if (vehicle_running[i] === "#02c706") {
+      line_color[return_line(destination[i])] = color[i];
+    }
+  }
+  response.send(db_template.meta(ScaleX, ScaleY, time, product, destination, direction, position, equm,
+    working, state, working_time, user, line_color, vehicle_running));
 
 
 });
 app.get('/tester', function (request, response) {
-  var tmp = [1,2,3,4,5,6,7,8,9,7,6,54,3,2,54,62,4315,76]
-    for (var i = 0; i < 4; i++) {
-//1층이 아닌 장소에 있는 agv는 2, 3 층 버튼 밑에 위치하도록 
-      if ((parseInt(tmp[i]) / 1000) > 2) {
-        ScaleX[i] =(420);
-        ScaleY[i] = (68 +  i * 30);
-      } else if ((parseInt(tmp[i]) / 1000) > 1) {
-        ScaleX[i]=(247);
-        ScaleY[i]=(88 +  i * 30);
-      }
-
+  var tmp = [1, 2, 3, 4, 5, 6, 7, 8, 9, 7, 6, 54, 3, 2, 54, 62, 4315, 76]
+  for (var i = 0; i < 4; i++) {
+    //1층이 아닌 장소에 있는 agv는 2, 3 층 버튼 밑에 위치하도록 
+    if ((parseInt(tmp[i]) / 1000) > 2) {
+      ScaleX[i] = (420);
+      ScaleY[i] = (68 + i * 30);
+    } else if ((parseInt(tmp[i]) / 1000) > 1) {
+      ScaleX[i] = (247);
+      ScaleY[i] = (88 + i * 30);
     }
-    html = db_template.meta(tmp, tmp, tmp, tmp, tmp, tmp, tmp, tmp,
-      tmp, tmp, tmp, tmp, tmp, tmp);
-  
+
+  }
+  html = db_template.meta(tmp, tmp, tmp, tmp, tmp, tmp, tmp, tmp,
+    tmp, tmp, tmp, tmp, tmp, tmp);
 
 
-    response.send(html);
+
+  response.send(html);
 
 
 });
@@ -1091,9 +1078,9 @@ app.get('/F1_3', function (request, response) {
 // proceed input from AGV
 // AGV에서 보내는 정보를 DB에 처리하는 부분 API1
 app.get('/AGV/:VN/:point/:des/:pro', async (req, res) => {
-  var fail_res = {message:'failed'};
-  var ok_res = {message : 'query ok'};
-  
+  var fail_res = { message: 'failed' };
+  var ok_res = { message: 'query ok' };
+
   var connection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
@@ -1109,17 +1096,17 @@ app.get('/AGV/:VN/:point/:des/:pro', async (req, res) => {
     if (err) {
       console.log("something wrong");
       res.json(fail_res);
-    }else{
-    sql = `update agvs_info set Product = ${req.params.pro} 
+    } else {
+      sql = `update agvs_info set Product = ${req.params.pro} 
     WHERE VehicleNumber = ${req.params.VN}`;
-    connection.query(sql, (err, result) => {
-      if (err) {
-        console.log('wrong isnert');
-        res.send('failed...');
-      }
-      res.json(ok_res);
-    });
-  }
+      connection.query(sql, (err, result) => {
+        if (err) {
+          console.log('wrong isnert');
+          res.send('failed...');
+        }
+        res.json(ok_res);
+      });
+    }
     connection.end();
   });
 });
@@ -1127,9 +1114,9 @@ app.get('/AGV/:VN/:point/:des/:pro', async (req, res) => {
 // proceed input from equipment
 // 장비에서 보내는 정보를 DB에 처리하는 부분 API2
 app.get('/equ_input/:equ_name/:process/:order_no', async (req, res) => {
-  var fail_res = {message:'failed'};
-  var ok_res = {message : 'query ok'};
-  
+  var fail_res = { message: 'failed' };
+  var ok_res = { message: 'query ok' };
+
   var connection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
@@ -1140,15 +1127,15 @@ app.get('/equ_input/:equ_name/:process/:order_no', async (req, res) => {
 
   var sql = `insert into ${req.params.equ_name}_status(state, order_no, time) VALUES (${req.params.process},"${req.params.order_no}", now())`;
   console.log(sql);
- 
-  
+
+
   connection.query(sql, (err, result) => {
     if (err) {
       console.log("something wrong");
       res.json(fail_res);
-    }else{
+    } else {
       res.json(ok_res);
-  }
+    }
     connection.end();
   });
 
@@ -1159,9 +1146,9 @@ app.get('/equ_input/:equ_name/:process/:order_no', async (req, res) => {
 // proceed input from washer
 // 세척기에서 보내는 정보를 DB에 처리하는 부분 API3
 app.get('/washer_input/:equ_name/:process/:order_no', async (req, res) => {
-  var fail_res = {message:'failed'};
-  var ok_res = {message : 'query ok'};
-  
+  var fail_res = { message: 'failed' };
+  var ok_res = { message: 'query ok' };
+
   var connection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
@@ -1178,17 +1165,17 @@ app.get('/washer_input/:equ_name/:process/:order_no', async (req, res) => {
     if (err) {
       console.log("something wrong");
       res.json(fail_res);
-    }else{
-    sql = `update agvs_info set Product = ${req.params.pro} 
+    } else {
+      sql = `update agvs_info set Product = ${req.params.pro} 
     WHERE VehicleNumber = ${req.params.VN}`;
-    connection.query(sql, (err, result) => {
-      if (err) {
-        console.log('wrong isnert');
-        res.send('failed...');
-      }
-      res.json(ok_res);
-    });
-  }
+      connection.query(sql, (err, result) => {
+        if (err) {
+          console.log('wrong isnert');
+          res.send('failed...');
+        }
+        res.json(ok_res);
+      });
+    }
     connection.end();
   });
 });
@@ -1200,19 +1187,24 @@ app.get('/create_equ_table/F1', async (req, res) => {
     "welding6", "measurement8", "measurement9",
     "external5", "measurement10", "measurement1", "measurement2",
     "measurement6", "external3",
-    "welding5","welding1","welding4","measurement3","measurement4",
+    "welding5", "welding1", "welding4", "measurement3", "measurement4",
     "3D_scanner");
-    html = ``;
-    for(i in equm){
-      html = html +`insert into ${equm[i]}_status(time, order_no) values(now(),"GDDF720211114009");<br>`;
-      
-      /*
-    html = html+`create table ${equm[i]}_status(seq bigint primary key auto_increment not null,
-      time datetime not null,
-      state varchar(32) not null default 0,
-      order_no varchar(64));<br>`;
-      */
-    }
+  html = ``;
+  for (i in equm) {
 
-    res.send(html);
+    html = html + `insert into ${equm[i]}_status(time, order_no) values(now(),"GDDF720211114009");<br>`;
+    /*     
+       html = html+`create table ${equm[i]}_status(seq bigint primary key auto_increment not null,
+         time datetime not null,
+         state varchar(32) not null default "",
+         order_no varchar(64) default "");<br>`;
+            
+   
+         html = html + `drop table ${equm[i]}_status;<br>`;
+   
+   */
+
+  }
+
+  res.send(html);
 });
