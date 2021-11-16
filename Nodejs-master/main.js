@@ -88,13 +88,12 @@ app.get('/state/*', function (request, response, next) {
 //app.get('/', (req, res) => res.send('Hello World!'))
 app.get('/', function (request, response) {
   if(authIsOwner(request,response) === false){
-    response.send("<script>alert('login required');location.href='/login';</script>");
+    response.send("<script>alert('로그인 필요');location.href='/login';</script>");
     return false;
   }
 
   var list = template.list();
-  var html = template.HTML(list,
-    authStatusUI(request, response)
+  var html = template.HTML(list
   );
   response.send(html);
 });
@@ -105,7 +104,7 @@ app.get('/login', function (request, response) {
   var html = 
     `<form action = "login_process" method = "post">
     <h1>LOG IN</h1>
-    <p><input type = "text" name="email" placeholder="email"></p>
+    <p><input type = "text" name="email" placeholder="id"></p>
     <p><input type = "password" name="password" placeholder="password"></p>
     <p><input type = "submit"></p>
     </form>
@@ -283,7 +282,7 @@ app.get('/F1', function (request, response) {
   connection.query(`select * from agvs_info ORDER BY VehicleNumber asc`,
     function (error, results, fields) {
       for (i in results) {
-        if (results[i].Product) {
+        if (results[i].product) {
           product.push("initial");
         } else {
           product.push("hidden");
@@ -376,6 +375,7 @@ app.get('/F1', function (request, response) {
   var html = ``;
 
   setTimeout(() => {
+//    console.log(product);
     for (var i = 0; i < 4; i++) {
 //1층이 아닌 장소에 있는 agv는 2, 3 층 버튼 밑에 위치하도록 
       if ((parseInt(position[i]) / 1000) > 2) {
@@ -572,46 +572,6 @@ app.get('/F3', function (request, response) {
   setTimeout(() => {
     response.send(html);
   }, 500);
-
-});
-
-// proceed input from AGV
-// AGV에서 보내는 정보를 DB에 처리하는 부분 API
-app.get('/AGV/:VN/:point/:des/:pro', async (req, res) => {
-  var fail_res = {message:'failed'};
-  var ok_res = {message : 'query ok'};
-  console.log(typeof(fail_res));
-  var connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '1234',
-    database: 'agv_monitor'
-  });
-  connection.connect();
-  sql = `insert into agvlocation${req.params.VN} 
-  (PointNumber, Destination, Time)
-  VALUES (${req.params.point}, ${req.params.des}, 
-  now())`;
-  connection.query(sql, (err, result) => {
-    if (err) {
-      console.log("something wrong");
-      res.json(fail_res);
-    }else{
-    sql = `update agvs_info set Product = ${req.params.pro} 
-    WHERE VehicleNumber = ${req.params.VN}`;
-    connection.query(sql, (err, result) => {
-      if (err) {
-        console.log('wrong isnert');
-        res.send('failed...');
-      }
-      console.log(result);
-      res.json(ok_res);
-    });
-  }
-    console.log(result);
-    connection.end();
-  });
-
 
 });
 
@@ -895,7 +855,7 @@ response.send(html);
 });
 });
 
-
+//혀ㅛ
 
 
 app.get('/F1_2', function (request, response) {
@@ -1127,5 +1087,112 @@ app.get('/F1_3', function (request, response) {
     }
     response.send(product);
     agv_location(log_out);
+  });
+});
+
+
+
+// proceed input from AGV
+// AGV에서 보내는 정보를 DB에 처리하는 부분 API1
+app.get('/AGV/:VN/:point/:des/:pro', async (req, res) => {
+  var fail_res = {message:'failed'};
+  var ok_res = {message : 'query ok'};
+  
+  var connection = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '1234',
+    database: 'agv_monitor'
+  });
+  connection.connect();
+  sql = `insert into agvlocation${req.params.VN} 
+  (PointNumber, Destination, Time)
+  VALUES (${req.params.point}, ${req.params.des}, 
+  now())`;
+  connection.query(sql, (err, result) => {
+    if (err) {
+      console.log("something wrong");
+      res.json(fail_res);
+    }else{
+    sql = `update agvs_info set Product = ${req.params.pro} 
+    WHERE VehicleNumber = ${req.params.VN}`;
+    connection.query(sql, (err, result) => {
+      if (err) {
+        console.log('wrong isnert');
+        res.send('failed...');
+      }
+      res.json(ok_res);
+    });
+  }
+    connection.end();
+  });
+});
+
+// proceed input from equipment
+// 장비에서 보내는 정보를 DB에 처리하는 부분 API2
+app.get('/equ_input/:equ_name/:process/:order_no', async (req, res) => {
+  var fail_res = {message:'failed'};
+  var ok_res = {message : 'query ok'};
+  
+  var connection = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '1234',
+    database: 'meta_0'
+  });
+  connection.connect();
+
+  var sql = `insert into ${req.params.equ_name}_status(state, order_no, time) VALUES (${req.params.process},"${req.params.order_no}", now())`;
+  console.log(sql);
+ 
+  
+  connection.query(sql, (err, result) => {
+    if (err) {
+      console.log("something wrong");
+      res.json(fail_res);
+    }else{
+      res.json(ok_res);
+  }
+    connection.end();
+  });
+
+
+});
+
+
+// proceed input from washer
+// 세척기에서 보내는 정보를 DB에 처리하는 부분 API3
+app.get('/washer_input/:equ_name/:process/:order_no', async (req, res) => {
+  var fail_res = {message:'failed'};
+  var ok_res = {message : 'query ok'};
+  
+  var connection = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '1234',
+    database: 'meta_0'
+  });
+  connection.connect();
+
+  sql = `insert into ${req.params.equ_name}_status 
+  (State, Order_Np, Time)
+  VALUES (${req.params.point}, ${req.params.des}, 
+  now())`;
+  connection.query(sql, (err, result) => {
+    if (err) {
+      console.log("something wrong");
+      res.json(fail_res);
+    }else{
+    sql = `update agvs_info set Product = ${req.params.pro} 
+    WHERE VehicleNumber = ${req.params.VN}`;
+    connection.query(sql, (err, result) => {
+      if (err) {
+        console.log('wrong isnert');
+        res.send('failed...');
+      }
+      res.json(ok_res);
+    });
+  }
+    connection.end();
   });
 });

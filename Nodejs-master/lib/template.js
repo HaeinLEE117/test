@@ -8,7 +8,7 @@ var connection = mysql.createConnection({
 connection.connect();
 
 module.exports = {
-  HTML:function(list,  authStatusUI = '<a href = "/login">login<a>'){
+  HTML:function(list,  authStatusUI = '<a href = "/logout_process">logout<a>'){
     return `
     <!doctype html>
     <html>

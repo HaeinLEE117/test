@@ -3,6 +3,7 @@ var mysql = require('mysql');
 module.exports = {
   meta: function (ScaleX, ScaleY, time, product, destination, direction, position, equm
     , working, state, working_time, user, line_color, vehicle_running) {
+//      console.log(product);
     //장비 위치
     let left = new Array(522, 552, 856, 186, 191, 810, 1010, 
       1783, 1566, 1342,
@@ -73,7 +74,7 @@ module.exports = {
       `;
     }
 
-    //html for equipment state
+    //html for equipment state DB수정되면 여기도 수정
     for (i in equm) {
       html = html + `
       <div class="popup" style="cursor: pointer; left: ${left[i]}px; top:${top[i]}px"
