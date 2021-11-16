@@ -8,30 +8,32 @@ var connection = mysql.createConnection({
 connection.connect();
 
 module.exports = {
-  HTML:function(title, list, body, control){
+  HTML:function(list,  authStatusUI = '<a href = "/logout_process">logout<a>'){
     return `
     <!doctype html>
     <html>
     <head>
-      <title>WEB1 - ${title}</title>
+      <title>SW-Meta</title>
       <meta charset="utf-8">
     </head>
     <body>
-      <h1><a href="/">WEB</a></h1>
+    ${authStatusUI}
+      <h1>MAIN</h1>
       ${list}
-      ${control}
-      ${body}
     </body>
     </html>
     `;
-  },list:function(filelist){
+  },list:function(){
     var list = '<ul>';
-    var i = 0;
-    while(i < filelist.length){
-      list = list + `<li><a href="/page/${filelist[i]}">${filelist[i]}</a></li>`;
-      i = i + 1;
+    list = list + `<li><a href="/F1">1층</a></li>`;
+    list = list + `<li><a href="/F2">2층</a></li>`;
+    list = list + `<li><a href="/F3">3층</a></li>`;
+    list = list + '</ul>';
+    list = list + `<h1>AGV Control Programm</h1><ul>`;
+    for(var i = 1; i<12; i++){
+      list = list + `<li><a href="/AGV_control/${i}">${i}호기</a></li>`;
     }
-    list = list+'</ul>';
+    list = list + '</ul>';
     return list;
   },meta:function(floor){
     let equm = new Array("pattern3", "pattern4", "pattern1", "AO1", "TS","welding10","welding11",
