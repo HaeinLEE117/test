@@ -3,8 +3,12 @@ var app = express();
 var bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-
+var cookie = require('cookie');
+var JSAlert = require("js-alert");
+var bcrypt = require('bcrypt-nodejs');
 var fs = require('fs');
+
+
 var template = require('./lib/template.js');
 var mysql = require('mysql');
 const db_info = {
@@ -18,7 +22,49 @@ const db_info = {
 app.use(express.static('public'));
 app.use(express.static(__dirname + '/public'));
 
+
+//로그인 관련 함수 
+function authStatusUI(request, response) {
+    var authStatusUI = `<a href = "/login">login<a>`;
+    if (authIsOwner(request, response)) {
+      authStatusUI = `<a href = "/logout_process">logout<a>`;
+    }
+    return authStatusUI;
+  }
+function authIsOwner(request, response) {
+    var cookies = {};
+    var connection4 = mysql.createConnection({
+      host: 'localhost',
+      user: 'root',
+      password: '1234',
+      database: 'meta_0'
+    });
+  
+    if (request.headers.cookie) {
+      cookies = cookie.parse(request.headers.cookie);
+      var querystring = `select password_encrypted from enc_user`;
+      connection4.query(querystring,
+        function (error, results, fields) {
+          for (i in results) {
+            if (cookies.password === results[i].password_encrypted) {
+              return true;
+            }
+          }
+          return false;
+        });
+    } else {
+      return false;
+    }
+  
+  }
+
+  
 app.get('*', function (request, response, next) {
+    
+  var isOwner = authIsOwner(request, response);
+
+
+  request.authStatusUI = authStatusUI;
     var connection = mysql.createConnection(db_info);
     connection.connect();
     connection.query('select * from category where active = 1', function (err, results, fields) {
@@ -45,19 +91,86 @@ app.post('*', function (request, response, next) {
 
 //메인
 app.get('/', function (req, res) {
-
+    if (authIsOwner(req, res) === false) {
+        res.send("<script>alert('로그인 필요');location.href='/login';</script>");
+        return false;
+      }
     var html = template.main_html(req.category, req.sub_title);
     res.send(html);
 
 });
+app.get('/login', function (request, response) {
+    var html =
+      `<form action = "login_process" method = "post">
+      <h1>LOG IN</h1>
+      <p><input type = "text" name="email" placeholder="id"></p>
+      <p><input type = "password" name="password" placeholder="password"></p>
+      <p><input type = "submit"></p>
+      </form>
+     `
+      ;
+    response.send(html);
+  });
+
+
+  app.post('/login_process', function (request, response) {
+    var post = request.body;
+    var id_check = false;
+    var connection4 = mysql.createConnection({
+      host: 'localhost',
+      user: 'root',
+      password: '1234',
+      database: 'meta_0'
+    });
+    var querystring = `select userid from enc_user`;
+    connection4.query(querystring,
+      function (error, results, fields) {
+        for (i in results) {
+          if (results[i].userid == post.email) {
+            var querystring2 = `select * from enc_user where userid = '${post.email}'`;
+            connection4.query(querystring2,
+              function (error, results, fields) {
+                if (error) {
+                  response.send("<script>alert('log_in_error');location.href='/login';</script>");
+                  response.end();
+                }
+                else {
+                  if (bcrypt.compareSync(post.password, results[0].password_encrypted)) {
+                    response.writeHead(302, {
+                      'Set-Cookie': [
+                        `email=${post.email}; max-age=3600`,
+                        `password = ${results[0].password_encrypted}; max-age=3600`
+                      ],
+                      Location: `/`
+                    });
+                    response.end();
+                  }
+                }
+              });
+          }
+        }
+  
+      });
+  });
+  
+
 
 //조회 페이지
 app.get('/search', function (req, res) {
+    if (authIsOwner(req, res) === false) {
+        res.send("<script>alert('로그인 필요');location.href='/login';</script>");
+        return false;
+      }
+    
     var html = template.search_html(req.category, req.sub_title);
     res.send(html);
 });
 
 app.post('/search', function (req, res) {
+    if (authIsOwner(req, res) === false) {
+        res.send("<script>alert('로그인 필요');location.href='/login';</script>");
+        return false;
+      }
     //post로 넘어온 정보 parse
     var post = req.body;
     var category = post.input_category;
@@ -86,7 +199,7 @@ app.post('/search', function (req, res) {
         sql = sql + `&& time <= DATE('${end_day}')+1`;
     }
 
-    sql = sql + ` ORDER BY time DESC`;
+    sql = sql + ` ORDER BY time DESC limit 100`;
 
     console.log(sql);
 
@@ -108,6 +221,10 @@ app.post('/search', function (req, res) {
 
 //인풋 처리
 app.post('/log_insert', function (request, response) {
+    if (authIsOwner(request, response) === false) {
+        response.send("<script>alert('로그인 필요');location.href='/login';</script>");
+        return false;
+      }
     var post = request.body;
     var category;
 
