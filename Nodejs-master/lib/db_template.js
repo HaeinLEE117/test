@@ -80,8 +80,8 @@ module.exports = {
       <div class="popup" style="cursor: pointer; left: ${left[i]}px; top:${top[i]}px"
       onclick="window.open('/state/${equm[i]}', 'window_name'
       , 'width=430,height=500,location=no,status=no,scrollbars=yes');">${equm[i]}</div>
-      <div class="state_box" style="left:${left[i]}px; top:${top[i] + 50}px;"><img src="src/${working[i]}" style="margin-right:3px;" />
-      ${state[i]} ${working_time[i]}분 경과..<br>${order_no[i]}</div>
+      <a href="./EQUM_DATA/${equm[i]}" target="_blank"><div class="state_box" style="left:${left[i]}px; top:${top[i] + 50}px;"><img src="src/${working[i]}" style="margin-right:3px;" />
+      ${state[i]} ${working_time[i]}분 경과..<br>${order_no[i]}</div></a>
       `;
     }
 
@@ -278,6 +278,22 @@ module.exports = {
         <tr align="center" bgcolor="white" style="font-weight:800">
             <td>위치</td>
             <td>목적지</td>
+            <td>시간</td>
+        </tr>`;
+
+
+    return html;
+  },equm_info: function (equm_name) {
+    var html = `<html lang="ko" xmlns="http://www.w3.org/1999/xhtml">
+    <BODY style="text-align:center;">
+    <header style="text-align:center; margin-top:35px; margin-bottom:15px;">
+        <h1>${equm_name} 공정 정보</h1>
+    </header>
+
+    <table border="1" width="50%" bgcolor="white" bordercolor=#003096 cellspacing="2" align="center" style="margin-top:40px">
+        <tr align="center" bgcolor="white" style="font-weight:800">
+            <td>공정</td>
+            <td>수주 번호</td>
             <td>시간</td>
         </tr>`;
 

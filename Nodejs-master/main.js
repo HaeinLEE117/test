@@ -363,10 +363,13 @@ app.get('/F1', function (request, response) {
           state.push("대기 중..");
           working.push("off.png");
           order_no.push(result[0].order_no);
+          if(result[0].order_no){
+            
+          }
         } else {
           state.push(result[0].state);
           working.push("on.gif");
-          order_no.push(`${result[0].order_no}`);
+          order_no.push(`<img src="src/mask.png" style="width:8px;" />${result[0].order_no}`);
         }
       });
   }
@@ -834,12 +837,38 @@ app.get('/AGV_DATA/:AGVnumber', function (request, response) {
       html = html + `</tr></table>  </BODY>  </HTML>
 `;
       response.send(html);
-
     });
 });
 
-//혀ㅛ
-
+//장비 상태 클릭시 이전 장비 공정 내역을 보여주는 페이지
+app.get('/EQUM_DATA/:equmID', function (request, response) {
+  var equmID = path.parse(request.params.equmID).base;
+  var connection = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: '1234',
+    database: 'meta_0'
+  });  
+  var html = db_template.equm_info(equmID);
+  connection.connect();
+  connection.query(`SELECT state,order_no,time FROM ${equmID}_status ORDER BY time DESC`,
+    function (error, results, fields) {
+      var state;
+      for (i in results) {
+        if(results[i].state === ""){
+          state = "대기";
+        }else{
+          state = results[i].state;
+        }
+        html = html + `<tr align=\"center\"><td>${state}</td>
+      <td>${results[i].order_no}</td>
+      <td>${results[i].time}</td></tr>`;
+      }
+      html = html + `</tr></table>  </BODY>  </HTML>
+`;
+      response.send(html);
+    });
+});
 
 app.get('/F1_2', function (request, response) {
   let product = new Array;

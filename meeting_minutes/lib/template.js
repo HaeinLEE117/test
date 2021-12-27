@@ -11,7 +11,7 @@ module.exports = {
         </head>
         <body>
             <h1>Main</h1>
-            <h3><a href="/search">조회 페이지수정을 해봣습니다</a></h3>
+            <h3><a href="/search">조회 페이지</a></h3>
 
             <form action="/log_insert" method="post">
             <label for="input_category">대분류 (장비):</label>
