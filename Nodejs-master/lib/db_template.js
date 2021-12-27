@@ -287,8 +287,8 @@ module.exports = {
   }, floor_3: function (ScaleX, ScaleY, time, product, destination, direction, position, equm
     , working, state, working_time, user, line_color, vehicle_running) {
     //장비 위치
-    let left = new Array(290, 290, 740, 1850, 1170, 1850);
-    let top = new Array(2170, 2420, 2450, 2014, 1994, 1694);
+    let left = new Array(290, 290, 740, 1850, 1170, 1850,740);
+    let top = new Array(2170, 2420, 2450, 2014, 1994, 1694,2170);
 
     //AGV line
     let line3_X = new Array(1383,1483,1579,1669,1719,1759,1859);

@@ -415,7 +415,7 @@ app.get('/F3', function (request, response) {
   let destination = new Array;
   let ScaleX = new Array;
   let ScaleY = new Array;
-  let equm = new Array("welding8","welding9","measurement11","coating1","coating2","coating3");
+  let equm = new Array("welding9","welding8","measurement11","coating1","coating2","coating3","pre_pattern2");
 
   let today = new Date();
   let user = new Array;
